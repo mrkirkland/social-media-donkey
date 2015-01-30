@@ -11,6 +11,7 @@ class sm  {
     var $process = array();
     var $urls = array();
     var $data = array();
+    var $headers = array();
     var $output = array();
     var $log = array();
 
@@ -27,6 +28,11 @@ class sm  {
     }
 
     /* ------------- processing functions ------------*/
+    public function add_url($url)
+    {
+            if(!empty($url))
+                $this->urls[] = trim($url);
+    }
 
     private function get_urls() {
         if(!is_readable($this->file))
@@ -34,8 +40,7 @@ class sm  {
 
         $data = file($this->file);
         foreach($data as $url)
-            if(!empty($url))
-                $this->urls[] = trim($url);
+            $this->add_url($url);
     }
 
 
@@ -48,7 +53,7 @@ class sm  {
             $this->output();
     }
 
-    private function process_urls() {
+    public function process_urls() {
         $this->_log(sprintf('%s: %s urls to process', __FUNCTION__, sizeof($this->urls)));
 
         //process the likes etc
@@ -58,9 +63,9 @@ class sm  {
                     $this->data[$url][$function] = $this->$function($url);
 
         //make in to a nice array
-        $headers = array_keys($this->process, 1);
-        array_unshift($headers, 'url');
-        $this->output[] = $headers;
+        $this->headers = array_keys($this->process, 1);
+        array_unshift($this->headers, 'url');
+        $this->output[] = $this->headers;
 
         foreach($this->data as $url => $values)
             $this->output[] = array_merge(array('url' => $url),$values);
@@ -68,7 +73,29 @@ class sm  {
 
     private function output()
     {
-        var_dump($this->output);
+        return $this->output;
+    }
+
+    //return as associative array
+    public function output_assoc()
+    {
+        //remove header row
+        $data = array_slice($this->output,1);
+
+        /*
+        print_r($this->headers);
+        print_r($data);
+        //loop through results
+        foreach($data as $record => $array)
+        {
+            foreach($this->headers as $key => $value)
+                $row[$value] = $array[$key];
+
+            $output[$record] = $row;
+        }
+         */
+        return $data;
+
     }
 
     private function output_csv() {
@@ -87,6 +114,12 @@ class sm  {
         fclose($fp);
         $this->_log(sprintf("%s: out put csv to %s", __FUNCTION__, $this->csv_file));
     }
+
+    public function output_json()
+    {
+        return json_encode($this->output);
+    }
+
 
 
     /* ------------- sm functions ------------*/
